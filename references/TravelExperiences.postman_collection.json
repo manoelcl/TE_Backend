@@ -1,0 +1,313 @@
+{
+	"info": {
+		"_postman_id": "d2c34847-fd93-457c-ae51-8f87ca4398c9",
+		"name": "TravelExperiences",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "recommendations",
+			"item": [
+				{
+					"name": "listRecommendations",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "localhost:3000/recommendations?location=Russia&classId=travel&order=desc",
+							"host": [
+								"localhost"
+							],
+							"port": "3000",
+							"path": [
+								"recommendations"
+							],
+							"query": [
+								{
+									"key": "location",
+									"value": "Russia",
+									"description": "Show recommendations for a given location"
+								},
+								{
+									"key": "classId",
+									"value": "travel",
+									"description": "Show recommendations by class"
+								},
+								{
+									"key": "order",
+									"value": "desc",
+									"description": "Display recommendations ordered by average rating"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "getRecommendation",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "localhost:3000/recommendations/:idRecommendation",
+							"host": [
+								"localhost"
+							],
+							"port": "3000",
+							"path": [
+								"recommendations",
+								":idRecommendation"
+							],
+							"variable": [
+								{
+									"key": "idRecommendation",
+									"value": "1"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "postRecommendation",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer tokendesesioniniciada",
+								"type": "default"
+							}
+						],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "title",
+									"value": "Viaje a Monaco",
+									"type": "default"
+								},
+								{
+									"key": "class",
+									"value": "Travel",
+									"type": "default"
+								},
+								{
+									"key": "location",
+									"value": "Monaco",
+									"type": "default"
+								},
+								{
+									"key": "abstract",
+									"value": "Un viaje lujoso en la ciudad de Monaco",
+									"type": "default"
+								},
+								{
+									"key": "content",
+									"value": "lorem ipsum",
+									"type": "default"
+								},
+								{
+									"key": "image",
+									"type": "file",
+									"src": "/home/manoel/Descargas/portrait_result.gif"
+								}
+							],
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "localhost:3000/recommendations/",
+							"host": [
+								"localhost"
+							],
+							"port": "3000",
+							"path": [
+								"recommendations",
+								""
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "commentRecommendation",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer tokenDeInicioDeSesion",
+								"type": "default"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"content\":\"lorem ipsum sic amecañdskañad\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "localhost:3000/recommendations/:idRecommendation/comment",
+							"host": [
+								"localhost"
+							],
+							"port": "3000",
+							"path": [
+								"recommendations",
+								":idRecommendation",
+								"comment"
+							],
+							"variable": [
+								{
+									"key": "idRecommendation",
+									"value": "1"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "voteRecommendation",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer tokenDeIdentificacionEtc",
+								"type": "default"
+							}
+						],
+						"url": {
+							"raw": "localhost:3000/recommendations/:idRecommendation/vote?rating=5",
+							"host": [
+								"localhost"
+							],
+							"port": "3000",
+							"path": [
+								"recommendations",
+								":idRecommendation",
+								"vote"
+							],
+							"query": [
+								{
+									"key": "rating",
+									"value": "5"
+								}
+							],
+							"variable": [
+								{
+									"key": "idRecommendation",
+									"value": ""
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "deleteRecommendation",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer tokenDeInicioDeSesion",
+								"type": "default"
+							}
+						],
+						"url": {
+							"raw": "localhost:3000/recommendations/:idRecommendation",
+							"host": [
+								"localhost"
+							],
+							"port": "3000",
+							"path": [
+								"recommendations",
+								":idRecommendation"
+							],
+							"variable": [
+								{
+									"key": "idRecommendation",
+									"value": ""
+								}
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "users",
+			"item": [
+				{
+					"name": "createUser",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"email\":\"prueba@prueba.com\",\n    \"password\":\"contraseña\",\n    \"username\":\"nombre\",\n    \"role\":\"admin\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "localhost:3000/users",
+							"host": [
+								"localhost"
+							],
+							"port": "3000",
+							"path": [
+								"users"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "loginUser",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"email\":\"pe2321pe@pepe.com\",\n    \"password\":\"pep92epe\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "localhost:3000/users/login",
+							"host": [
+								"localhost"
+							],
+							"port": "3000",
+							"path": [
+								"users",
+								"login"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "comments",
+			"item": []
+		}
+	]
+}
