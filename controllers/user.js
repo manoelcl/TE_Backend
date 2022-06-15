@@ -2,7 +2,7 @@ const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 
 const { generateError } = require("../helpers");
-const { createUser, getUserByEmail } = require("../db/userDB");
+const { createUser, getUserByEmail, getUserById } = require("../db/userDB");
 const {
   loginUserSchema,
   createUserSchema,
@@ -12,8 +12,7 @@ const {
 const createUserController = async (req, res, next) => {
   try {
     await createUserSchema.validateAsync(req.body);
-
-    const { email, password, username, role } = req.body;
+    let { email, password, username, role } = req.body;
 
     password = bcrypt.hashSync(password, 8);
 
@@ -45,6 +44,7 @@ const loginUserController = async (req, res, next) => {
 
     //Compruebo que coinciden password
     console.log(bcrypt.hashSync(password, 8));
+    console.log(password, user.password);
     const validPassword = await bcrypt.compare(password, user.password);
 
     if (!validPassword) {
@@ -71,7 +71,46 @@ const loginUserController = async (req, res, next) => {
   }
 };
 
+const getUserController = async (req, res, next) => {
+  try {
+    // Dos parametros en la misma busqueda
+    const { id } = req.params;
+
+    const recommendationsList = await getUserById(id);
+
+    res.send({
+      status: "ok",
+      message: recommendationsList,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+//ALL RECOMMENDATIONS BY USER
+const listRecommendationsByUserController = async (req, res, next) => {
+  try {
+    // Dos parametros en la misma busqueda
+    const { location, classId, order } = req.params;
+
+    const recommendationsList = await listRecommendations(
+      location,
+      classId,
+      order
+    );
+
+    res.send({
+      status: "ok",
+      message: recommendationsList,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
 module.exports = {
   createUserController,
   loginUserController,
+  getUserController,
+  listRecommendationsByUserController,
 };

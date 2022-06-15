@@ -11,23 +11,39 @@ const {
   voteRecommendation,
   commentRecommendation,
   deleteRecommendationById,
+  getComments,
 } = require("../db/recommendationsDB");
 
 //ALL RECOMMENDATIONS
 const listRecommendationsController = async (req, res, next) => {
   try {
-    // Dos parametros en la misma busqueda
-    const { location, classId, order } = req.query;
+    const { location, classId, idUser, order } = req.query;
 
     const recommendationsList = await listRecommendations(
       location,
       classId,
+      idUser,
       order
     );
 
     res.send({
       status: "ok",
-      message: recommendationsList,
+      data: recommendationsList,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+const getCommentsController = async (req, res, next) => {
+  try {
+    const { idRecommendation } = req.params;
+    console.log(idRecommendation);
+    const recommendationsList = await getComments(idRecommendation);
+
+    res.send({
+      status: "ok",
+      data: recommendationsList,
     });
   } catch (error) {
     next(error);
@@ -51,6 +67,7 @@ const getRecommendationController = async (req, res, next) => {
 
 //CREATE RECOMMENDATION - Login necesario
 const postRecommendationController = async (req, res, next) => {
+  console.log(req.body);
   try {
     await recommendationSchema.validateAsync(req.body);
 
@@ -58,7 +75,7 @@ const postRecommendationController = async (req, res, next) => {
       throw generateError("Recommendations require an image", 401);
     }
     const photo = await processImage(req.files.photo);
-    console.log(photo);
+
     const { title, classId, location, abstract, content } = req.body;
 
     const idRecommendation = await postRecommendation(
@@ -90,12 +107,15 @@ const commentRecommendationController = async (req, res, next) => {
     const { idRecommendation } = req.params;
     const { content } = req.body;
     const idUser = req.auth.id;
-
+    console.log(content, req.body);
     const commentNum = await commentRecommendation(
       idUser,
       idRecommendation,
       content
     );
+
+    res.statusCode = 201;
+
     res.send({
       status: "ok",
       message: `Comment added to the comments table with id ${commentNum}`,
@@ -160,4 +180,5 @@ module.exports = {
   voteRecommendationController,
   commentRecommendationController,
   deleteRecommendationController,
+  getCommentsController,
 };

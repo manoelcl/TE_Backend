@@ -11,7 +11,20 @@ const getRecommendationByID = async (id) => {
     connection = await getConnection();
 
     const [result] = await connection.query(
-      `SELECT * FROM recommendation WHERE id=?`,
+      `SELECT 
+      r.title,
+      r.abstract,
+      r.content,
+      r.photo,
+      r.class,
+      r.creation_date as creationDate,
+      (SELECT AVG(v.rating) FROM vote v WHERE v.id_recommendation = r.id GROUP BY v.id_recommendation) as average,
+      u.username,
+      u.id as userId
+      FROM recommendation r
+      JOIN user u
+      ON r.id_user=u.id
+      WHERE r.id=?`,
       [id]
     );
 
@@ -25,25 +38,57 @@ const getRecommendationByID = async (id) => {
   }
 };
 
-const listRecommendations = async (location, classId, order) => {
+//Devuelve todas las recomendaciones publicadas por un usuario
+
+const getAllRecommendationsByUserID = async (id) => {
   let connection;
 
   try {
     connection = await getConnection();
 
-    let queryString = `SELECT r.title, r.abstract, r.id, AVG(v.rating) AS average FROM recommendation r JOIN vote v ON r.id=v.id_recommendation`;
+    const [result] = await connection.query(
+      `SELECT r.title, r.abstract, r.id, r.id_user as userId, r.photo,
+      (SELECT AVG(v.rating) FROM vote v WHERE v.id_recommendation = r.id GROUP BY v.id_recommendation) as average
+      FROM recommendation r WHERE r.id_user=?`,
+      [id]
+    );
+
+    if (result.length === 0) {
+      throw generateError("No hay ninguna recommendation con esa id", 404);
+    }
+
+    return result;
+  } finally {
+    if (connection) connection.release();
+  }
+};
+
+const listRecommendations = async (location, classId, idUser, order) => {
+  let connection;
+
+  try {
+    connection = await getConnection();
+
+    let queryString = `SELECT r.title, r.abstract, r.id, r.id_user as userId, r.photo,
+    (SELECT AVG(v.rating) FROM vote v WHERE v.id_recommendation = r.id GROUP BY v.id_recommendation) as average
+    FROM recommendation r`;
     let queryArray = [];
-    if (location && classId) {
-      queryString = queryString + ` WHERE r.location=? AND r.class=?`;
-      queryArray.push(location, classId);
-    } else {
-      if (location) {
-        queryString = queryString + ` WHERE r.location=?`;
-        queryArray.push(location);
-      } else if (classId) {
-        queryString = queryString + ` WHERE r.class=?`;
-        queryArray.push(classId);
-      }
+    let queryStringArray = [];
+
+    if (location) {
+      queryStringArray.push(`r.location=?`);
+      queryArray.push(location);
+    }
+    if (classId) {
+      queryStringArray.push(`r.class=?`);
+      queryArray.push(classId);
+    }
+    if (idUser) {
+      queryStringArray.push(`r.id_user=?`);
+      queryArray.push(idUser);
+    }
+    if (queryStringArray.length > 0) {
+      queryString = queryString + " WHERE " + queryStringArray.join(" AND ");
     }
 
     queryString = queryString + ` GROUP BY r.id`;
@@ -55,7 +100,6 @@ const listRecommendations = async (location, classId, order) => {
         queryString = queryString + ` ORDER BY average DESC`;
       }
     }
-
     const [result] = await connection.query(queryString, queryArray);
 
     if (result.length === 0) {
@@ -92,6 +136,7 @@ const postRecommendation = async (
     if (connection) connection.release();
   }
 };
+
 const voteRecommendation = async (idUser, idRecommendation, rating) => {
   try {
     connection = await getConnection();
@@ -117,7 +162,6 @@ const commentRecommendation = async (idUser, idRecommendation, content) => {
       `INSERT INTO comment (id_user, id_recommendation, content) VALUES (?,?,?)`,
       [idUser, idRecommendation, content]
     );
-
     return result.insertId;
   } catch (err) {
     throw err;
@@ -144,11 +188,37 @@ const deleteRecommendationById = async (id) => {
   }
 };
 
+const getComments = async (id) => {
+  let connection;
+
+  try {
+    connection = await getConnection();
+
+    const [result] = await connection.query(
+      `SELECT c.id_user as userId, c.id as commentId, c.content, c.creation_date as creationDate, u.username FROM comment c
+      JOIN user u ON c.id_user = u.id
+      WHERE c.id_recommendation=? ORDER BY c.creation_date DESC LIMIT 0, 50;
+        `,
+      [id]
+    );
+
+    if (result.length === 0) {
+      throw generateError("No hay ninguna recommendations con esa id", 404);
+    }
+
+    return result;
+  } finally {
+    if (connection) connection.release();
+  }
+};
+
 module.exports = {
   getRecommendationByID,
+  getAllRecommendationsByUserID,
   listRecommendations,
   postRecommendation,
   voteRecommendation,
   commentRecommendation,
   deleteRecommendationById,
+  getComments,
 };

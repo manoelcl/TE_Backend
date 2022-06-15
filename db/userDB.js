@@ -21,15 +21,13 @@ const createUser = async (email, password, username, role) => {
     if (user.length > 0) {
       throw generateError("Ese email ya esta registrado, 409");
     }
-    //Encriptamos password
-    const passwordHash = await bcrypt.hash(password, 8);
-    console.log(role);
+
     //Creamos el usuario
     const newUser = await connection.query(
       `
       INSERT INTO user (email, password, username, role) VALUES (?,?,?,?)
     `,
-      [email, passwordHash, username, role]
+      [email, password, username, role]
     );
     //Nos devuelve el id
     return newUser.insertId;
@@ -52,6 +50,27 @@ const getUserByEmail = async (email) => {
     );
 
     if (result.length === 0) {
+      throw generateError("This email has not been registered yet", 404);
+    }
+
+    return result[0];
+  } finally {
+    if (connection) connection.release();
+  }
+};
+
+const getUserById = async (id) => {
+  let connection;
+
+  try {
+    connection = await getConnection();
+
+    const [result] = await connection.query(
+      `SELECT id as userId, email, username, role, creation_date as creationDate FROM user WHERE id=?`,
+      [id]
+    );
+
+    if (result.length === 0) {
       throw generateError(" No hay ningun usuario con ese id", 404);
     }
 
@@ -64,4 +83,5 @@ const getUserByEmail = async (email) => {
 module.exports = {
   createUser,
   getUserByEmail,
+  getUserById,
 };
