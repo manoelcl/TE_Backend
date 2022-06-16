@@ -15,6 +15,8 @@ const getRecommendationByID = async (id) => {
       r.title,
       r.abstract,
       r.content,
+      r.lat,
+      r.lon,
       r.photo,
       r.class,
       r.creation_date as creationDate,
@@ -47,7 +49,7 @@ const getAllRecommendationsByUserID = async (id) => {
     connection = await getConnection();
 
     const [result] = await connection.query(
-      `SELECT r.title, r.abstract, r.id, r.id_user as userId, r.photo,
+      `SELECT r.title, r.abstract, r.id, r.id_user as userId, r.lat, r.lon, r.photo,
       (SELECT AVG(v.rating) FROM vote v WHERE v.id_recommendation = r.id GROUP BY v.id_recommendation) as average
       FROM recommendation r WHERE r.id_user=?`,
       [id]
@@ -63,22 +65,32 @@ const getAllRecommendationsByUserID = async (id) => {
   }
 };
 
-const listRecommendations = async (location, classId, idUser, order) => {
+const listRecommendations = async (lat, lon, classId, idUser, order) => {
   let connection;
 
   try {
     connection = await getConnection();
 
-    let queryString = `SELECT r.title, r.abstract, r.id, r.id_user as userId, r.photo,
-    (SELECT AVG(v.rating) FROM vote v WHERE v.id_recommendation = r.id GROUP BY v.id_recommendation) as average
+    let queryString = `
+    SELECT 
+    r.title,
+    r.abstract,
+    r.id,
+    r.id_user as userId,
+    r.lat,
+    r.lon,
+    r.photo,
+    (
+      SELECT 
+      AVG(v.rating) 
+      FROM vote v
+      WHERE v.id_recommendation = r.id 
+      GROUP BY v.id_recommendation
+    ) as average
     FROM recommendation r`;
-    let queryArray = [];
+    let queryArray;
     let queryStringArray = [];
 
-    if (location) {
-      queryStringArray.push(`r.location=?`);
-      queryArray.push(location);
-    }
     if (classId) {
       queryStringArray.push(`r.class=?`);
       queryArray.push(classId);
@@ -112,13 +124,107 @@ const listRecommendations = async (location, classId, idUser, order) => {
   }
 };
 
+const nearbyRecommendations = async (distance, lat, lon, classId) => {
+  let connection;
+
+  try {
+    connection = await getConnection();
+
+    let queryString = `
+    SELECT 
+    r.id,
+    r.title,
+    r.abstract,
+    r.lat,
+    r.lon,
+    r.photo,
+    u.username,
+    (
+      SELECT
+      AVG(v.rating)
+      FROM vote v 
+      WHERE v.id_recommendation = r.id 
+      GROUP BY v.id_recommendation
+    ) as average,
+    (
+      6371 *
+       acos(cos(radians(?)) * 
+       cos(radians(r.lat)) * 
+       cos(radians(r.lon) - 
+       radians(?)) + 
+       sin(radians(?)) * 
+       sin(radians(r.lat )))
+    ) AS distance 
+    FROM recommendation r
+    JOIN user u ON r.id_user=u.id
+    HAVING distance < ?
+    ORDER BY distance LIMIT 0, 20;`;
+
+    const [result] = await connection.query(queryString, [
+      lat,
+      lon,
+      lat,
+      distance,
+    ]);
+
+    if (result.length === 0) {
+      throw generateError("There are no experiences in your area", 404);
+    }
+
+    return result;
+  } finally {
+    if (connection) connection.release();
+  }
+};
+
+const getStaffPicks = async () => {
+  let connection;
+
+  try {
+    connection = await getConnection();
+
+    let queryString = `
+    SELECT 
+    r.id,
+    r.title,
+    r.abstract,
+    r.lat,
+    r.lon,
+    r.photo,
+    u.username,
+    (
+      SELECT
+      AVG(v.rating)
+      FROM vote v 
+      WHERE v.id_recommendation = r.id 
+      GROUP BY v.id_recommendation
+    ) as average,
+    sp.creation_date
+    FROM recommendation r
+    INNER JOIN staff_picks sp ON r.id = sp.id
+    JOIN user u ON r.id_user = u.id
+    ORDER BY r.creation_date DESC LIMIT 0, 10;`;
+
+    const [result] = await connection.query(queryString);
+
+    if (result.length === 0) {
+      throw generateError("There are no staff picks", 404);
+    }
+
+    return result;
+  } finally {
+    if (connection) connection.release();
+  }
+};
+
 //Creamos una recomendacion
 
 const postRecommendation = async (
   id_user,
   title,
   clase,
-  location,
+  lat,
+  lon,
   abstract,
   content,
   photo
@@ -128,8 +234,8 @@ const postRecommendation = async (
   try {
     connection = await getConnection();
     const [result] = await connection.query(
-      `INSERT INTO recommendation (id_user, title, class, location, abstract, content, photo) VALUES (?,?,?,?,?,?,?)`,
-      [id_user, title, clase, location, abstract, content, photo]
+      `INSERT INTO recommendation (id_user, title, class, lat, lon, abstract, content, photo) VALUES (?,?,?,?,?,?,?,?)`,
+      [id_user, title, clase, lat, lon, abstract, content, photo]
     );
     return result.insertId;
   } finally {
@@ -213,6 +319,7 @@ const getComments = async (id) => {
 };
 
 module.exports = {
+  getStaffPicks,
   getRecommendationByID,
   getAllRecommendationsByUserID,
   listRecommendations,
@@ -220,5 +327,6 @@ module.exports = {
   voteRecommendation,
   commentRecommendation,
   deleteRecommendationById,
+  nearbyRecommendations,
   getComments,
 };

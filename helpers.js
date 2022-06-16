@@ -17,7 +17,7 @@ const createPathIfNotExists = async (path) => {
   }
 };
 
-const processImage = async (image) => {
+const processImage = async (image, size) => {
   const imgPath = path.join(__dirname, "images");
   await createPathIfNotExists(imgPath);
 
@@ -25,8 +25,8 @@ const processImage = async (image) => {
 
   const imageInfo = await img.metadata();
 
-  if (imageInfo.width > 512) {
-    await img.resize(512);
+  if (imageInfo.width > size) {
+    await img.resize(size);
   }
 
   const fileName = `${uuid.v4()}.jpg`;

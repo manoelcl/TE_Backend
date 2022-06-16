@@ -18,7 +18,9 @@ const {
 
 //RECOMMENDATIONS
 const {
+  getStaffPicksController,
   getRecommendationController,
+  nearbyRecommendationsController,
   listRecommendationsController,
   postRecommendationController,
   commentRecommendationController,
@@ -46,6 +48,8 @@ app.post("/users/login", loginUserController);
 //Rutas de Recommendations
 
 app.get("/recommendations", listRecommendationsController);
+app.get("/recommendations/nearby", nearbyRecommendationsController);
+app.get("/recommendations/staffpicks", getStaffPicksController);
 app.get("/recommendations/:id", getRecommendationController);
 app.get("/recommendations/:idRecommendation/comment", getCommentsController);
 

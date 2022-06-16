@@ -12,11 +12,16 @@ const recommendationSchema = Joi.object({
     .valid("travel", "experience")
     .required()
     .error(generateError("Recommendation must have a valid class", 400)),
-  location: Joi.string()
-    .min(2)
-    .max(100)
+  lat: Joi.number()
     .required()
-    .error(generateError("Recommendation must have a valid location", 400)),
+    .error(
+      generateError("Recommendation must have a valid location latitude", 400)
+    ),
+  lon: Joi.number()
+    .required()
+    .error(
+      generateError("Recommendation must have a valid location longitude", 400)
+    ),
   abstract: Joi.string()
     .min(3)
     .max(300)

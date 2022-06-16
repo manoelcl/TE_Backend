@@ -10,33 +10,31 @@ const createUser = async (email, password, username, role) => {
   try {
     connection = await getConnection();
 
-    //Comprobamos que no esta registrado ( Revisar mismo username)
+    //Check if username or mail are already in use
 
     const [user] = await connection.query(
-      `
-            SELECT id FROM user WHERE email = ? 
-        `,
-      [email]
+      `SELECT id FROM user WHERE email = ? OR username = ?`,
+      [email, username]
     );
     if (user.length > 0) {
-      throw generateError("Ese email ya esta registrado, 409");
+      throw generateError("Email or username already in use", 409);
     }
 
-    //Creamos el usuario
+    //Create the user
     const newUser = await connection.query(
       `
       INSERT INTO user (email, password, username, role) VALUES (?,?,?,?)
     `,
       [email, password, username, role]
     );
-    //Nos devuelve el id
+    //Return the id
     return newUser.insertId;
   } finally {
     if (connection) connection.release();
   }
 };
 
-//Devuelve la info de un usuario - Para el login
+//Returns user info by mail
 
 const getUserByEmail = async (email) => {
   let connection;
@@ -59,6 +57,8 @@ const getUserByEmail = async (email) => {
   }
 };
 
+//Returns user info by id
+
 const getUserById = async (id) => {
   let connection;
 
@@ -66,7 +66,7 @@ const getUserById = async (id) => {
     connection = await getConnection();
 
     const [result] = await connection.query(
-      `SELECT id as userId, email, username, role, creation_date as creationDate FROM user WHERE id=?`,
+      `SELECT id as userId, email, username, role, creation_date FROM user WHERE id=?`,
       [id]
     );
 

@@ -1,7 +1,7 @@
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 
-const { generateError } = require("../helpers");
+const { generateError, processImage } = require("../helpers");
 const { createUser, getUserByEmail, getUserById } = require("../db/userDB");
 const {
   loginUserSchema,
@@ -12,7 +12,7 @@ const {
 const createUserController = async (req, res, next) => {
   try {
     await createUserSchema.validateAsync(req.body);
-    let { email, password, username, role } = req.body;
+    let { email, password, username, role = "user" } = req.body;
 
     password = bcrypt.hashSync(password, 8);
 
@@ -51,11 +51,11 @@ const loginUserController = async (req, res, next) => {
       throw generateError("Password incorrecto", 401);
     }
 
-    //Payload del token
+    //Token payload
 
     const payload = { id: user.id, role: user.role };
 
-    //Firmo el token
+    //Token sign
 
     const token = jwt.sign(payload, process.env.SECRET, {
       expiresIn: "1d",
@@ -73,7 +73,6 @@ const loginUserController = async (req, res, next) => {
 
 const getUserController = async (req, res, next) => {
   try {
-    // Dos parametros en la misma busqueda
     const { id } = req.params;
 
     const recommendationsList = await getUserById(id);
@@ -90,11 +89,11 @@ const getUserController = async (req, res, next) => {
 //ALL RECOMMENDATIONS BY USER
 const listRecommendationsByUserController = async (req, res, next) => {
   try {
-    // Dos parametros en la misma busqueda
-    const { location, classId, order } = req.params;
+    const { location, distance, classId, order } = req.params;
 
     const recommendationsList = await listRecommendations(
       location,
+      distance,
       classId,
       order
     );

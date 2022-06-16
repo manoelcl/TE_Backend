@@ -5,6 +5,7 @@ const {
   recommendationVote,
 } = require("../validators/recommendationsValidator");
 const {
+  getStaffPicks,
   getRecommendationByID,
   listRecommendations,
   postRecommendation,
@@ -12,15 +13,40 @@ const {
   commentRecommendation,
   deleteRecommendationById,
   getComments,
+  nearbyRecommendations,
 } = require("../db/recommendationsDB");
 
-//ALL RECOMMENDATIONS
+// ALL RECOMMENDATIONS
 const listRecommendationsController = async (req, res, next) => {
   try {
-    const { location, classId, idUser, order } = req.query;
+    const { lat, lon, distance, classId, idUser, order } = req.query;
 
     const recommendationsList = await listRecommendations(
-      location,
+      lat,
+      lon,
+      distance,
+      classId,
+      idUser,
+      order
+    );
+
+    res.send({
+      status: "ok",
+      data: recommendationsList,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+const nearbyRecommendationsController = async (req, res, next) => {
+  try {
+    const { distance, lat, lon, classId, idUser, order } = req.query;
+
+    const recommendationsList = await nearbyRecommendations(
+      distance,
+      lat,
+      lon,
       classId,
       idUser,
       order
@@ -40,6 +66,19 @@ const getCommentsController = async (req, res, next) => {
     const { idRecommendation } = req.params;
     console.log(idRecommendation);
     const recommendationsList = await getComments(idRecommendation);
+
+    res.send({
+      status: "ok",
+      data: recommendationsList,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+const getStaffPicksController = async (req, res, next) => {
+  try {
+    const recommendationsList = await getStaffPicks();
 
     res.send({
       status: "ok",
@@ -74,15 +113,16 @@ const postRecommendationController = async (req, res, next) => {
     if (!req.files.photo) {
       throw generateError("Recommendations require an image", 401);
     }
-    const photo = await processImage(req.files.photo);
+    const photo = await processImage(req.files.photo, 2048);
 
-    const { title, classId, location, abstract, content } = req.body;
+    const { title, classId, lat, lon, abstract, content } = req.body;
 
     const idRecommendation = await postRecommendation(
       req.auth.id,
       title,
       classId,
-      location,
+      lat,
+      lon,
       abstract,
       content,
       photo
@@ -93,6 +133,7 @@ const postRecommendationController = async (req, res, next) => {
     res.send({
       status: "ok",
       message: "Entrada creada correctamente.",
+      data: idRecommendation,
     });
   } catch (error) {
     next(error);
@@ -153,7 +194,7 @@ const deleteRecommendationController = async (req, res, next) => {
 
     const recommendation = await getRecommendationByID(idRecommendation);
 
-    //Comprobar que el usuario del token es el mismo que lo ha creado
+    //Check user is allowed
 
     if (req.userId !== recommendation.user_id) {
       throw generateError(
@@ -161,7 +202,7 @@ const deleteRecommendationController = async (req, res, next) => {
         401
       );
     }
-    //Borrar el tweet
+    //Delete post
     await deleteRecommendationById(idRecommendation);
 
     res.send({
@@ -174,7 +215,9 @@ const deleteRecommendationController = async (req, res, next) => {
 };
 
 module.exports = {
+  getStaffPicksController,
   listRecommendationsController,
+  nearbyRecommendationsController,
   getRecommendationController,
   postRecommendationController,
   voteRecommendationController,
