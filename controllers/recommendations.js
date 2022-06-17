@@ -160,6 +160,7 @@ const commentRecommendationController = async (req, res, next) => {
     res.send({
       status: "ok",
       message: `Comment added to the comments table with id ${commentNum}`,
+      data: { commentId: commentNum, userId: idUser, content },
     });
   } catch (error) {
     next(error);
