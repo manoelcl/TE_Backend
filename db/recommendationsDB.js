@@ -1,4 +1,5 @@
 const bcrypt = require("bcrypt");
+const { query } = require("express");
 const { generateError } = require("../helpers");
 const { getConnection } = require("./db");
 
@@ -20,7 +21,12 @@ const getRecommendationByID = async (id) => {
       r.photo,
       r.class,
       r.creation_date as creationDate,
-      (SELECT AVG(v.rating) FROM vote v WHERE v.id_recommendation = r.id GROUP BY v.id_recommendation) as average,
+      (
+        SELECT AVG(v.rating)
+        FROM vote v
+        WHERE v.id_recommendation = r.id 
+        GROUP BY v.id_recommendation
+      ) as average,
       u.username,
       u.id as userId
       FROM recommendation r
@@ -49,8 +55,20 @@ const getAllRecommendationsByUserID = async (id) => {
     connection = await getConnection();
 
     const [result] = await connection.query(
-      `SELECT r.title, r.abstract, r.id, r.id_user as userId, r.lat, r.lon, r.photo,
-      (SELECT AVG(v.rating) FROM vote v WHERE v.id_recommendation = r.id GROUP BY v.id_recommendation) as average
+      `SELECT 
+        r.title, 
+        r.abstract, 
+        r.id, 
+        r.id_user as userId, 
+        r.lat, 
+        r.lon, 
+        r.photo,
+      (
+        SELECT AVG(v.rating) 
+        FROM vote v 
+        WHERE v.id_recommendation = r.id 
+        GROUP BY v.id_recommendation
+      ) as average
       FROM recommendation r WHERE r.id_user=?`,
       [id]
     );
@@ -65,7 +83,7 @@ const getAllRecommendationsByUserID = async (id) => {
   }
 };
 
-const listRecommendations = async (lat, lon, classId, idUser, order) => {
+const listRecommendations = async (distance, lat, lon, classId) => {
   let connection;
 
   try {
@@ -73,49 +91,51 @@ const listRecommendations = async (lat, lon, classId, idUser, order) => {
 
     let queryString = `
     SELECT 
+    r.id,
     r.title,
     r.abstract,
-    r.id,
-    r.id_user as userId,
     r.lat,
     r.lon,
     r.photo,
+    r.class,
+    u.username,
     (
-      SELECT 
-      AVG(v.rating) 
-      FROM vote v
+      SELECT
+      AVG(v.rating)
+      FROM vote v 
       WHERE v.id_recommendation = r.id 
       GROUP BY v.id_recommendation
-    ) as average
-    FROM recommendation r`;
-    let queryArray;
-    let queryStringArray = [];
+    ) AS average,
+    (
+      6371 *
+       acos(cos(radians(?)) * 
+       cos(radians(r.lat)) * 
+       cos(radians(r.lon) - 
+       radians(?)) + 
+       sin(radians(?)) * 
+       sin(radians(r.lat )))
+    ) AS distance 
+    FROM recommendation r
+    JOIN user u ON r.id_user=u.id
+    EXTRAQUERY
+    HAVING distance < ? 
+    ORDER BY distance LIMIT 0, 20;`;
 
+    queryString = queryString.replace(
+      "EXTRAQUERY",
+      classId ? "WHERE r.class = ? " : ""
+    );
+    console.log(classId);
+    const queryArray = [lat, lon, lat];
     if (classId) {
-      queryStringArray.push(`r.class=?`);
       queryArray.push(classId);
     }
-    if (idUser) {
-      queryStringArray.push(`r.id_user=?`);
-      queryArray.push(idUser);
-    }
-    if (queryStringArray.length > 0) {
-      queryString = queryString + " WHERE " + queryStringArray.join(" AND ");
-    }
-
-    queryString = queryString + ` GROUP BY r.id`;
-
-    if (order) {
-      if (order.toUpperCase() === "ASC") {
-        queryString = queryString + ` ORDER BY average ASC`;
-      } else {
-        queryString = queryString + ` ORDER BY average DESC`;
-      }
-    }
+    queryArray.push(distance);
+    console.log(queryString);
     const [result] = await connection.query(queryString, queryArray);
 
     if (result.length === 0) {
-      throw generateError("No hay ninguna recommendations con esa id", 404);
+      throw generateError("There are no experiences in your area", 404);
     }
 
     return result;
@@ -145,7 +165,7 @@ const nearbyRecommendations = async (distance, lat, lon, classId) => {
       FROM vote v 
       WHERE v.id_recommendation = r.id 
       GROUP BY v.id_recommendation
-    ) as average,
+    ) AS average,
     (
       6371 *
        acos(cos(radians(?)) * 
@@ -234,7 +254,17 @@ const postRecommendation = async (
   try {
     connection = await getConnection();
     const [result] = await connection.query(
-      `INSERT INTO recommendation (id_user, title, class, lat, lon, abstract, content, photo) VALUES (?,?,?,?,?,?,?,?)`,
+      `INSERT INTO recommendation
+      (
+        id_user, 
+        title, 
+        class, 
+        lat, 
+        lon, 
+        abstract, 
+        content, 
+        photo
+      ) VALUES (?,?,?,?,?,?,?,?)`,
       [id_user, title, clase, lat, lon, abstract, content, photo]
     );
     return result.insertId;
@@ -248,7 +278,12 @@ const voteRecommendation = async (idUser, idRecommendation, rating) => {
     connection = await getConnection();
 
     const [result] = await connection.query(
-      `INSERT INTO vote (id_user, id_recommendation, rating) VALUES (?,?,?)`,
+      `INSERT INTO vote 
+      (
+        id_user, 
+        id_recommendation, 
+        rating
+      ) VALUES (?,?,?)`,
       [idUser, idRecommendation, rating]
     );
 
@@ -265,7 +300,12 @@ const commentRecommendation = async (idUser, idRecommendation, content) => {
     connection = await getConnection();
 
     const [result] = await connection.query(
-      `INSERT INTO comment (id_user, id_recommendation, content) VALUES (?,?,?)`,
+      `INSERT INTO comment 
+      (
+        id_user, 
+        id_recommendation, 
+        content
+      ) VALUES (?,?,?)`,
       [idUser, idRecommendation, content]
     );
     return result.insertId;
@@ -301,9 +341,16 @@ const getComments = async (id) => {
     connection = await getConnection();
 
     const [result] = await connection.query(
-      `SELECT c.id_user as userId, c.id as commentId, c.content, c.creation_date as creationDate, u.username FROM comment c
+      `SELECT 
+        c.id_user as userId, 
+        c.id as commentId, 
+        c.content, 
+        c.creation_date as creationDate, 
+        u.username FROM comment c
       JOIN user u ON c.id_user = u.id
-      WHERE c.id_recommendation=? ORDER BY c.creation_date DESC LIMIT 0, 50;
+      WHERE c.id_recommendation=? 
+      ORDER BY c.creation_date DESC 
+      LIMIT 0, 50;
         `,
       [id]
     );

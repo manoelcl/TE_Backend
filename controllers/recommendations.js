@@ -19,12 +19,12 @@ const {
 // ALL RECOMMENDATIONS
 const listRecommendationsController = async (req, res, next) => {
   try {
-    const { lat, lon, distance, classId, idUser, order } = req.query;
+    const { distance, lat, lon, classId, idUser, order } = req.query;
 
     const recommendationsList = await listRecommendations(
+      distance,
       lat,
       lon,
-      distance,
       classId,
       idUser,
       order

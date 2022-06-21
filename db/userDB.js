@@ -23,7 +23,13 @@ const createUser = async (email, password, username, role) => {
     //Create the user
     const newUser = await connection.query(
       `
-      INSERT INTO user (email, password, username, role) VALUES (?,?,?,?)
+      INSERT INTO user
+      (
+        email, 
+        password, 
+        username, 
+        role) 
+        VALUES (?,?,?,?)
     `,
       [email, password, username, role]
     );
@@ -66,7 +72,13 @@ const getUserById = async (id) => {
     connection = await getConnection();
 
     const [result] = await connection.query(
-      `SELECT id as userId, email, username, role, creation_date FROM user WHERE id=?`,
+      `SELECT
+      id as userId,
+      email, 
+      username, 
+      role, 
+      creation_date 
+      FROM user WHERE id=?`,
       [id]
     );
 

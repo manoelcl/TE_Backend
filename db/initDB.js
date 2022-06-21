@@ -18,7 +18,7 @@ async function main() {
     console.log("Creating new ones...");
 
     await connection.query(`
-    CREATE TABLE user (
+CREATE TABLE user (
         id INT UNSIGNED AUTO_INCREMENT,
         email VARCHAR(100) NOT NULL UNIQUE,
         password VARCHAR(100) NOT NULL,
