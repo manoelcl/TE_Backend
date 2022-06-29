@@ -6,7 +6,7 @@ const express = require("express");
 const fileUpload = require("express-fileupload");
 const cors = require("cors");
 
-const { authUser } = require("./middlewares/auth");
+const { authUser, isAdmin } = require("./middlewares/auth");
 
 //USER
 const {
@@ -38,22 +38,26 @@ app.use(fileUpload());
 app.use(cors());
 app.use("/images", express.static("./images"));
 
-//Rutas de User
+//USER ROUTES
 
-app.post("/users", createUserController);
-app.get("/users/:id", getUserController); //development
-app.get("/users/:id/recommendations", listRecommendationsByUserController); //development
+//PUBLIC
+app.get("/users/:id/recommendations", listRecommendationsByUserController);
+app.get("/users/:id", getUserController);
 app.post("/users/login", loginUserController);
+app.post("/users", createUserController);
 
-//Rutas de Recommendations
+//PROTECTED
 
-app.get("/recommendations", listRecommendationsController);
-app.get("/recommendations/nearby", nearbyRecommendationsController);
-app.get("/recommendations/staffpicks", getStaffPicksController);
-app.get("/recommendations/:id", getRecommendationController);
+//RECOMMENDATION ROUTES
+
+//PUBLIC
 app.get("/recommendations/:idRecommendation/comment", getCommentsController);
+app.get("/recommendations/staffpicks", getStaffPicksController);
+app.get("/recommendations/nearby", nearbyRecommendationsController);
+app.get("/recommendations/:id", getRecommendationController);
+app.get("/recommendations", listRecommendationsController);
 
-//Private paths
+//PROTECTED
 app.post("/recommendations", authUser, postRecommendationController);
 app.post(
   "/recommendations/:idRecommendation/comment",
@@ -65,13 +69,19 @@ app.post(
   authUser,
   voteRecommendationController
 );
+app.post(
+  "/recommendations/staffpicks",
+  authUser,
+  isAdmin,
+  getStaffPicksController
+); //development
 app.delete(
   "/recommendations/:idRecommendation",
   authUser,
   deleteRecommendationController
 );
 
-//Middleware 404
+//404 middlewate
 app.use((req, res) => {
   res.status(404).send({
     status: "error",
@@ -79,7 +89,7 @@ app.use((req, res) => {
   });
 });
 
-//Middleware de gestion de errores
+//Error handling middleware
 app.use((error, req, res, next) => {
   console.error(error);
 

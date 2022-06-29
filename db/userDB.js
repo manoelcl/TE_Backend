@@ -34,7 +34,7 @@ const createUser = async (email, password, username, role) => {
       [email, password, username, role]
     );
     //Return the id
-    return newUser.insertId;
+    return newUser[0].insertId;
   } finally {
     if (connection) connection.release();
   }
@@ -83,10 +83,47 @@ const getUserById = async (id) => {
     );
 
     if (result.length === 0) {
-      throw generateError(" No hay ningun usuario con ese id", 404);
+      throw generateError("There is no user with that id", 404);
     }
 
     return result[0];
+  } finally {
+    if (connection) connection.release();
+  }
+};
+
+//Devuelve todas las recomendaciones publicadas por un usuario
+
+const getAllRecommendationsByUserID = async (id) => {
+  let connection;
+
+  try {
+    connection = await getConnection();
+
+    const [result] = await connection.query(
+      `SELECT 
+        r.title, 
+        r.abstract, 
+        r.id, 
+        r.id_user as userId, 
+        r.lat, 
+        r.lon, 
+        r.photo,
+      (
+        SELECT AVG(v.rating) 
+        FROM vote v 
+        WHERE v.id_recommendation = r.id 
+        GROUP BY v.id_recommendation
+      ) as average
+      FROM recommendation r WHERE r.id_user=?`,
+      [id]
+    );
+
+    if (result.length === 0) {
+      throw generateError("There are no recommendations for that user id", 404);
+    }
+
+    return result;
   } finally {
     if (connection) connection.release();
   }
@@ -96,4 +133,5 @@ module.exports = {
   createUser,
   getUserByEmail,
   getUserById,
+  getAllRecommendationsByUserID,
 };

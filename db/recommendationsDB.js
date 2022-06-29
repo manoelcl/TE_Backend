@@ -46,43 +46,6 @@ const getRecommendationByID = async (id) => {
   }
 };
 
-//Devuelve todas las recomendaciones publicadas por un usuario
-
-const getAllRecommendationsByUserID = async (id) => {
-  let connection;
-
-  try {
-    connection = await getConnection();
-
-    const [result] = await connection.query(
-      `SELECT 
-        r.title, 
-        r.abstract, 
-        r.id, 
-        r.id_user as userId, 
-        r.lat, 
-        r.lon, 
-        r.photo,
-      (
-        SELECT AVG(v.rating) 
-        FROM vote v 
-        WHERE v.id_recommendation = r.id 
-        GROUP BY v.id_recommendation
-      ) as average
-      FROM recommendation r WHERE r.id_user=?`,
-      [id]
-    );
-
-    if (result.length === 0) {
-      throw generateError("No hay ninguna recommendation con esa id", 404);
-    }
-
-    return result;
-  } finally {
-    if (connection) connection.release();
-  }
-};
-
 const listRecommendations = async (distance, lat, lon, classId) => {
   let connection;
 
@@ -144,7 +107,7 @@ const listRecommendations = async (distance, lat, lon, classId) => {
   }
 };
 
-const nearbyRecommendations = async (distance, lat, lon, classId) => {
+const nearbyRecommendations = async (distance, lat, lon) => {
   let connection;
 
   try {
@@ -368,7 +331,6 @@ const getComments = async (id) => {
 module.exports = {
   getStaffPicks,
   getRecommendationByID,
-  getAllRecommendationsByUserID,
   listRecommendations,
   postRecommendation,
   voteRecommendation,

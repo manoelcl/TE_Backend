@@ -2,11 +2,17 @@ const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 
 const { generateError, processImage } = require("../helpers");
-const { createUser, getUserByEmail, getUserById } = require("../db/userDB");
+const {
+  createUser,
+  getUserByEmail,
+  getUserById,
+  getAllRecommendationsByUserID,
+} = require("../db/userDB");
 const {
   loginUserSchema,
   createUserSchema,
 } = require("../validators/userValidators");
+const { getRecommendationByID } = require("../db/recommendationsDB");
 
 //CREATE USER
 const createUserController = async (req, res, next) => {
@@ -21,6 +27,7 @@ const createUserController = async (req, res, next) => {
     res.send({
       status: "ok",
       message: `Has sido registrado correctamente con id: ${id}`,
+      data: id,
     });
   } catch (error) {
     next(error);
@@ -89,18 +96,14 @@ const getUserController = async (req, res, next) => {
 //ALL RECOMMENDATIONS BY USER
 const listRecommendationsByUserController = async (req, res, next) => {
   try {
-    const { location, distance, classId, order } = req.params;
+    const { id } = req.params;
 
-    const recommendationsList = await listRecommendations(
-      location,
-      distance,
-      classId,
-      order
-    );
+    const recommendationsList = await getAllRecommendationsByUserID(id);
 
     res.send({
       status: "ok",
-      message: recommendationsList,
+
+      data: recommendationsList,
     });
   } catch (error) {
     next(error);

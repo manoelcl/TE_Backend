@@ -89,7 +89,7 @@ const getStaffPicksController = async (req, res, next) => {
   }
 };
 
-//SINGLE RECOMMENDATION - Hecho
+//SINGLE RECOMMENDATION
 const getRecommendationController = async (req, res, next) => {
   try {
     const { id } = req.params;
@@ -104,7 +104,7 @@ const getRecommendationController = async (req, res, next) => {
   }
 };
 
-//CREATE RECOMMENDATION - Login necesario
+//CREATE RECOMMENDATION
 const postRecommendationController = async (req, res, next) => {
   console.log(req.body);
   try {
@@ -191,11 +191,10 @@ const deleteRecommendationController = async (req, res, next) => {
     //req.UserId
     const { idRecommendation } = req.params;
     const idUser = req.auth.id;
-    //Localizar el id
 
     const recommendation = await getRecommendationByID(idRecommendation);
 
-    //Check user is allowed
+    //Check if user is allowed
 
     if (req.userId !== recommendation.user_id) {
       throw generateError(

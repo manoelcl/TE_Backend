@@ -89,6 +89,7 @@ CREATE TABLE staff_picks(
     INSERT INTO user (email, password, username, role)
     VALUES ('admin@admin.com', '$2b$08$EJN5N37hQlW7ueri.N5pdu5VLJXipfsTGCXlyS19JMI13ZHXkY09u', 'elAdmin', 'admin');
 `);
+    //USE "useruser" AS PASSWORD
     console.log("admin created: email:admin@admin.com password: useruser");
   } catch (error) {
     console.error(error);
