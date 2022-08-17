@@ -1,4 +1,7 @@
 require("dotenv").config();
+const fs = require("fs");
+const path = require("path");
+const { createPathIfNotExists } = require("../helpers");
 
 const { getConnection } = require("./db");
 
@@ -12,6 +15,7 @@ async function main() {
 
     await connection.query(`DROP TABLE IF EXISTS vote`);
     await connection.query(`DROP TABLE IF EXISTS comment`);
+    await connection.query(`DROP TABLE IF EXISTS staff_picks`);
     await connection.query(`DROP TABLE IF EXISTS recommendation`);
     await connection.query(`DROP TABLE IF EXISTS user`);
 
@@ -87,10 +91,65 @@ CREATE TABLE staff_picks(
     console.log("staff_picks created...");
     await connection.query(`
     INSERT INTO user (email, password, username, role)
-    VALUES ('admin@admin.com', '$2b$08$EJN5N37hQlW7ueri.N5pdu5VLJXipfsTGCXlyS19JMI13ZHXkY09u', 'elAdmin', 'admin');
+    VALUES ('admin@admin.com', '$2b$08$EJN5N37hQlW7ueri.N5pdu5VLJXipfsTGCXlyS19JMI13ZHXkY09u', 'admin', 'admin');
 `);
+
     //USE "useruser" AS PASSWORD
     console.log("admin created: email:admin@admin.com password: useruser");
+
+    const imgPath = path.join(__dirname, "../images");
+    await createPathIfNotExists(imgPath);
+
+    fs.copyFile(
+      "./default_images/pexels-alleksana-6159168.jpg",
+      "./images/pexels-alleksana-6159168.jpg",
+      (err) => {
+        if (err) throw err;
+        console.log("source.txt was copied to destination.txt");
+      }
+    );
+    fs.copyFile(
+      "./default_images/pexels-hatice-baran-11606102.jpg",
+      "./images/pexels-hatice-baran-11606102.jpg",
+      (err) => {
+        if (err) throw err;
+        console.log("source.txt was copied to destination.txt");
+      }
+    );
+    fs.copyFile(
+      "./default_images/pexels-juan-samudio-9320207.jpg",
+      "./images/pexels-juan-samudio-9320207.jpg",
+      (err) => {
+        if (err) throw err;
+        console.log("source.txt was copied to destination.txt");
+      }
+    );
+    fs.copyFile(
+      "./default_images/pexels-maria-loznevaya-13125805.jpg",
+      "./images/pexels-maria-loznevaya-13125805.jpg",
+      (err) => {
+        if (err) throw err;
+        console.log("source.txt was copied to destination.txt");
+      }
+    );
+    fs.copyFile(
+      "./default_images/pexels-marie-bastin-8963239.jpg",
+      "./images/pexels-marie-bastin-8963239.jpg",
+      (err) => {
+        if (err) throw err;
+        console.log("source.txt was copied to destination.txt");
+      }
+    );
+
+    await connection.query(`
+    INSERT INTO recommendation (id_user, title, class, lat, lon, abstract, content, photo)
+    VALUES (1, 'Bakery', 'experience', 12, 14, 'Resumen', 'contenido', 'pexels-alleksana-6159168.jpg'),
+    (1, 'Temple ruins', 'travel', 12, 14, 'Resumen', 'contenido', 'pexels-hatice-baran-11606102.jpg'),
+    (1, 'Beach', 'experience', 12, 14, 'Resumen', 'contenido', 'pexels-juan-samudio-9320207.jpg'),
+    (1, 'Balloons', 'experience', 12, 14, 'Resumen', 'contenido', 'pexels-maria-loznevaya-13125805.jpg'),
+    (1, 'Beach cliff', 'travel', 12, 14, 'Resumen', 'contenido', 'pexels-marie-bastin-8963239.jpg')
+    ;
+`);
   } catch (error) {
     console.error(error);
   } finally {

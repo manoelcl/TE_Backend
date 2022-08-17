@@ -38,4 +38,5 @@ const processImage = async (image, size) => {
 module.exports = {
   generateError,
   processImage,
+  createPathIfNotExists,
 };
